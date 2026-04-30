@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rainy Night · 雨夜</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Noto+Serif+TC:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--cream:#e8e0d0;--gold:#c9a96e;--dark:#050508}
+html{scroll-behavior:smooth}
+body{background:var(--dark);color:var(--cream);font-family:'Noto Serif TC',serif;overflow-x:hidden;cursor:none}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");pointer-events:none;z-index:998;animation:grain 0.4s steps(1) infinite;opacity:0.4}
+@keyframes grain{0%,100%{transform:translate(0,0)}25%{transform:translate(-1px,1px)}50%{transform:translate(1px,-1px)}75%{transform:translate(-1px,-1px)}}
+.cursor{position:fixed;width:8px;height:8px;background:var(--gold);border-radius:50%;pointer-events:none;z-index:9999;mix-blend-mode:difference}
+#rain-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;opacity:0.5}
+.progress{position:fixed;bottom:0;left:0;right:0;height:2px;background:rgba(200,190,170,0.05);z-index:100}
+.progress-bar{height:100%;background:linear-gradient(to right,var(--gold),rgba(200,170,100,0.3));width:0%}
+
+/* HERO */
+.hero{position:relative;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 70% at 50% 55%,rgba(20,15,35,0.8) 0%,rgba(0,0,0,0.3) 100%)}
+.hero-title{text-align:center;position:relative;z-index:2}
+.title-en{font-family:'Cormorant Garamond',serif;font-weight:300;font-style:italic;font-size:clamp(3rem,8vw,7rem);letter-spacing:0.15em;color:var(--cream);display:block;animation:fadeUp 2s ease both;line-height:1}
+.title-line{width:1px;height:60px;background:linear-gradient(to bottom,transparent,var(--gold),transparent);margin:1.5rem auto;animation:lineGrow 2s 1s ease both;transform:scaleY(0);transform-origin:top}
+.title-zh{font-family:'Noto Serif TC',serif;font-weight:200;font-size:clamp(0.9rem,2vw,1.3rem);letter-spacing:0.6em;color:var(--gold);display:block;opacity:0.85;animation:fadeUp 2s 1s ease both}
+.title-film{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(0.75rem,1.5vw,1rem);letter-spacing:0.35em;color:rgba(200,190,170,0.45);display:block;margin-top:1rem;animation:fadeUp 2s 1.5s ease both}
+.scroll-hint{position:absolute;bottom:3rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:0.5rem;animation:fadeUp 1s 3s ease both;opacity:0}
+.scroll-hint span{font-size:0.6rem;letter-spacing:0.4em;color:rgba(200,190,170,0.35)}
+.scroll-line{width:1px;height:38px;background:linear-gradient(to bottom,var(--gold),transparent);animation:scrollPulse 2s ease-in-out infinite}
+@keyframes scrollPulse{0%,100%{opacity:0.3}50%{opacity:1}}
+
+/* SECTIONS */
+.cat-section{position:relative;z-index:2;padding:5rem 0 2rem;opacity:0;transform:translateY(25px);transition:opacity 0.8s ease,transform 0.8s ease}
+.cat-section.visible{opacity:1;transform:translateY(0)}
+.cat-header{display:flex;align-items:flex-end;justify-content:space-between;padding:0 5vw 1.5rem;flex-wrap:wrap;gap:1rem}
+.cat-label{display:flex;flex-direction:column;gap:0.3rem}
+.cat-zh{font-family:'Noto Serif TC',serif;font-weight:200;font-size:clamp(1.4rem,3.5vw,2.2rem);letter-spacing:0.25em;color:var(--cream)}
+.cat-en{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(0.75rem,1.5vw,0.95rem);letter-spacing:0.35em;color:var(--gold);opacity:0.7}
+.cat-desc{font-size:0.72rem;letter-spacing:0.15em;color:rgba(200,190,170,0.35);margin-top:0.2rem}
+.strip-nav{display:flex;gap:0.5rem;align-items:center}
+.strip-btn{font-family:'Cormorant Garamond',serif;font-size:2rem;color:rgba(200,190,170,0.4);background:none;border:1px solid rgba(200,170,100,0.2);width:2.5rem;height:2.5rem;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s;line-height:1}
+.strip-btn:hover{color:var(--cream);border-color:var(--gold);background:rgba(200,170,100,0.05)}
+
+/* FILM STRIP */
+.strip-wrap{position:relative;overflow:hidden;padding:0 5vw}
+.film-strip{display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x mandatory;cursor:grab;user-select:none;-webkit-overflow-scrolling:touch}
+.film-strip::-webkit-scrollbar{display:none}
+.film-strip.dragging{cursor:grabbing}
+.film-frame{flex:0 0 clamp(260px,30vw,420px);aspect-ratio:16/9;position:relative;overflow:hidden;scroll-snap-align:start;border:1px solid rgba(200,190,170,0.06);filter:sepia(0.4) brightness(0.45) contrast(1.1);transition:filter 0.7s ease,transform 0.6s ease;cursor:zoom-in}
+.film-frame:hover{filter:sepia(0.1) brightness(0.85) contrast(1.05);transform:scale(1.02);z-index:5}
+.film-frame img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;background:#111}
+.film-frame::before,.film-frame::after{content:'';position:absolute;left:0;right:0;height:9%;z-index:3;pointer-events:none}
+.film-frame::before{top:0;background:linear-gradient(to bottom,#000,rgba(0,0,0,0.6))}
+.film-frame::after{bottom:0;background:linear-gradient(to top,#000,rgba(0,0,0,0.6))}
+.frame-num{position:absolute;bottom:10%;right:0.8rem;font-family:'Cormorant Garamond',serif;font-size:0.6rem;letter-spacing:0.2em;color:rgba(200,190,170,0.35);z-index:4}
+
+/* DIVIDER */
+.divider{display:flex;align-items:center;gap:1.5rem;padding:3rem 10vw;z-index:2;position:relative;opacity:0;transform:translateY(20px);transition:opacity 0.8s ease,transform 0.8s ease}
+.divider.visible{opacity:1;transform:translateY(0)}
+.div-line{flex:1;height:1px;background:linear-gradient(to right,transparent,rgba(200,170,100,0.25),transparent)}
+.div-dot{font-size:0.8rem;color:var(--gold);opacity:0.45}
+
+/* CREDITS */
+.credits{position:relative;z-index:2;max-width:680px;margin:0 auto;padding:2rem 5vw 6rem;opacity:0;transform:translateY(25px);transition:opacity 0.8s ease,transform 0.8s ease}
+.credits.visible{opacity:1;transform:translateY(0)}
+.credits-cat{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:0.68rem;letter-spacing:0.5em;color:var(--gold);text-transform:uppercase;margin-bottom:1.5rem;opacity:0.8}
+.credit-item{margin-bottom:1.8rem;padding-bottom:1.8rem;border-bottom:1px solid rgba(200,190,170,0.06)}
+.credit-item:last-child{border-bottom:none}
+.c-name{font-family:'Cormorant Garamond',serif;font-size:clamp(1.2rem,3vw,1.7rem);font-weight:300;letter-spacing:0.1em;color:var(--cream)}
+.c-role{font-size:0.72rem;letter-spacing:0.3em;color:rgba(200,190,170,0.4);margin-top:0.25rem;display:block}
+.c-note{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:0.9rem;color:rgba(200,190,170,0.5);margin-top:0.5rem;line-height:1.75;display:block}
+.thanks-box{text-align:center;padding:2.5rem 2rem;border:1px solid rgba(200,170,100,0.1);background:rgba(255,255,255,0.015);margin:2rem 0}
+.thanks-box p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(0.95rem,2.2vw,1.15rem);line-height:2.4;color:rgba(220,210,190,0.7)}
+.thanks-box .g{color:var(--gold)}
+.funny{padding:1.8rem 2rem;border-left:2px solid rgba(200,170,100,0.2);background:rgba(255,255,255,0.012);margin:1.5rem 0}
+.funny p{font-size:0.82rem;line-height:2.3;color:rgba(200,190,170,0.55);letter-spacing:0.07em}
+.funny p+p{margin-top:0.7rem}
+
+/* FINALE */
+.finale{position:relative;z-index:2;text-align:center;padding:5rem 5vw 9rem;border-top:1px solid rgba(200,190,170,0.06)}
+.finale-quote{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(1.3rem,3.5vw,2.3rem);font-weight:300;color:var(--cream);letter-spacing:0.08em;line-height:1.75;max-width:580px;margin:0 auto 2rem;opacity:0;animation:fadeUp 1.5s 0.3s ease both}
+.finale-attr{font-size:0.68rem;letter-spacing:0.4em;color:var(--gold);opacity:0.55}
+.end{margin-top:5rem;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:0.6rem;letter-spacing:0.5em;color:rgba(200,190,170,0.18);text-transform:uppercase}
+
+/* LIGHTBOX */
+.lb{position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:999;display:none;align-items:center;justify-content:center}
+.lb.open{display:flex}
+.lb img{max-width:90vw;max-height:90vh;object-fit:contain;animation:fadeIn 0.3s ease}
+.lb-x{position:fixed;top:1.2rem;right:1.5rem;background:none;border:none;color:rgba(200,190,170,0.5);font-size:1rem;cursor:pointer;letter-spacing:0.2em;font-family:'Cormorant Garamond',serif}
+.lb-x:hover{color:var(--cream)}
+.lb-p,.lb-n{position:fixed;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(200,190,170,0.4);font-size:2.5rem;cursor:pointer;padding:1rem;font-family:'Cormorant Garamond',serif;transition:color 0.2s;line-height:1}
+.lb-p{left:0.5rem}.lb-n{right:0.5rem}
+.lb-p:hover,.lb-n:hover{color:var(--cream)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes lineGrow{to{transform:scaleY(1)}}
+</style>
+</head>
+<body>
+<div class="cursor" id="cursor"></div>
+<canvas id="rain-canvas"></canvas>
+<div class="progress"><div class="progress-bar" id="pbar"></div></div>
+
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-title">
+    <span class="title-en">Rainy Night</span>
+    <div class="title-line"></div>
+    <span class="title-zh">雨　夜</span>
+    <span class="title-film">A Short Film</span>
+  </div>
+  <div class="scroll-hint"><span>scroll</span><div class="scroll-line"></div></div>
+</section>
+
+
+  <section class="cat-section" data-reveal>
+    <div class="cat-header">
+      <div class="cat-label">
+        <span class="cat-zh">雨　夜</span>
+        <span class="cat-en">Rainy Night</span>
+        <span class="cat-desc">像電影重要場景，安靜深情</span>
+      </div>
+      <div class="strip-nav">
+        <button class="strip-btn strip-prev" data-strip="cat1">&#8249;</button>
+        <button class="strip-btn strip-next" data-strip="cat1">&#8250;</button>
+      </div>
+    </div>
+    <div class="strip-wrap">
+      <div class="film-strip" id="strip-cat1">
+        <div class="film-frame" data-cat="cat1" data-idx="0">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/01.png" alt="" loading="lazy">
+          <div class="frame-num">01</div>
+        </div>
+        <div class="film-frame" data-cat="cat1" data-idx="1">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/02.png" alt="" loading="lazy">
+          <div class="frame-num">02</div>
+        </div>
+        <div class="film-frame" data-cat="cat1" data-idx="2">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/03.png" alt="" loading="lazy">
+          <div class="frame-num">03</div>
+        </div>
+        <div class="film-frame" data-cat="cat1" data-idx="3">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/04.png" alt="" loading="lazy">
+          <div class="frame-num">04</div>
+        </div>
+        <div class="film-frame" data-cat="cat1" data-idx="4">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/05.png" alt="" loading="lazy">
+          <div class="frame-num">05</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="divider" data-reveal><div class="div-line"></div><span class="div-dot">✦</span><div class="div-line"></div></div>
+  <section class="cat-section" data-reveal>
+    <div class="cat-header">
+      <div class="cat-label">
+        <span class="cat-zh">靠近一點</span>
+        <span class="cat-en">A Little Closer</span>
+        <span class="cat-desc">有溫度的距離</span>
+      </div>
+      <div class="strip-nav">
+        <button class="strip-btn strip-prev" data-strip="cat2">&#8249;</button>
+        <button class="strip-btn strip-next" data-strip="cat2">&#8250;</button>
+      </div>
+    </div>
+    <div class="strip-wrap">
+      <div class="film-strip" id="strip-cat2">
+        <div class="film-frame" data-cat="cat2" data-idx="0">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/06.png" alt="" loading="lazy">
+          <div class="frame-num">01</div>
+        </div>
+        <div class="film-frame" data-cat="cat2" data-idx="1">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/07.png" alt="" loading="lazy">
+          <div class="frame-num">02</div>
+        </div>
+        <div class="film-frame" data-cat="cat2" data-idx="2">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/08.png" alt="" loading="lazy">
+          <div class="frame-num">03</div>
+        </div>
+        <div class="film-frame" data-cat="cat2" data-idx="3">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/09.png" alt="" loading="lazy">
+          <div class="frame-num">04</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="divider" data-reveal><div class="div-line"></div><span class="div-dot">✦</span><div class="div-line"></div></div>
+  <section class="cat-section" data-reveal>
+    <div class="cat-header">
+      <div class="cat-label">
+        <span class="cat-zh">你幹嘛</span>
+        <span class="cat-en">Hey</span>
+        <span class="cat-desc">小動作，大心跳</span>
+      </div>
+      <div class="strip-nav">
+        <button class="strip-btn strip-prev" data-strip="cat3">&#8249;</button>
+        <button class="strip-btn strip-next" data-strip="cat3">&#8250;</button>
+      </div>
+    </div>
+    <div class="strip-wrap">
+      <div class="film-strip" id="strip-cat3">
+        <div class="film-frame" data-cat="cat3" data-idx="0">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/10.png" alt="" loading="lazy">
+          <div class="frame-num">01</div>
+        </div>
+        <div class="film-frame" data-cat="cat3" data-idx="1">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/11.png" alt="" loading="lazy">
+          <div class="frame-num">02</div>
+        </div>
+        <div class="film-frame" data-cat="cat3" data-idx="2">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/12.png" alt="" loading="lazy">
+          <div class="frame-num">03</div>
+        </div>
+        <div class="film-frame" data-cat="cat3" data-idx="3">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/13.png" alt="" loading="lazy">
+          <div class="frame-num">04</div>
+        </div>
+        <div class="film-frame" data-cat="cat3" data-idx="4">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/14.png" alt="" loading="lazy">
+          <div class="frame-num">05</div>
+        </div>
+        <div class="film-frame" data-cat="cat3" data-idx="5">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/15.png" alt="" loading="lazy">
+          <div class="frame-num">06</div>
+        </div>
+        <div class="film-frame" data-cat="cat3" data-idx="6">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/16.png" alt="" loading="lazy">
+          <div class="frame-num">07</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="divider" data-reveal><div class="div-line"></div><span class="div-dot">✦</span><div class="div-line"></div></div>
+  <section class="cat-section" data-reveal>
+    <div class="cat-header">
+      <div class="cat-label">
+        <span class="cat-zh">下班啦</span>
+        <span class="cat-en">That's a Wrap</span>
+        <span class="cat-desc">放鬆、搞笑的真實樣子</span>
+      </div>
+      <div class="strip-nav">
+        <button class="strip-btn strip-prev" data-strip="cat4">&#8249;</button>
+        <button class="strip-btn strip-next" data-strip="cat4">&#8250;</button>
+      </div>
+    </div>
+    <div class="strip-wrap">
+      <div class="film-strip" id="strip-cat4">
+        <div class="film-frame" data-cat="cat4" data-idx="0">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/17.png" alt="" loading="lazy">
+          <div class="frame-num">01</div>
+        </div>
+        <div class="film-frame" data-cat="cat4" data-idx="1">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/18.png" alt="" loading="lazy">
+          <div class="frame-num">02</div>
+        </div>
+        <div class="film-frame" data-cat="cat4" data-idx="2">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/19.png" alt="" loading="lazy">
+          <div class="frame-num">03</div>
+        </div>
+        <div class="film-frame" data-cat="cat4" data-idx="3">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/20.png" alt="" loading="lazy">
+          <div class="frame-num">04</div>
+        </div>
+        <div class="film-frame" data-cat="cat4" data-idx="4">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/21.png" alt="" loading="lazy">
+          <div class="frame-num">05</div>
+        </div>
+        <div class="film-frame" data-cat="cat4" data-idx="5">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/22.png" alt="" loading="lazy">
+          <div class="frame-num">06</div>
+        </div>
+        <div class="film-frame" data-cat="cat4" data-idx="6">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/23.png" alt="" loading="lazy">
+          <div class="frame-num">07</div>
+        </div>
+        <div class="film-frame" data-cat="cat4" data-idx="7">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/24.png" alt="" loading="lazy">
+          <div class="frame-num">08</div>
+        </div>
+        <div class="film-frame" data-cat="cat4" data-idx="8">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/25.png" alt="" loading="lazy">
+          <div class="frame-num">09</div>
+        </div>
+        <div class="film-frame" data-cat="cat4" data-idx="9">
+          <img src="https://raw.githubusercontent.com/yan7ann00/rainy-night/main/26.png" alt="" loading="lazy">
+          <div class="frame-num">10</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="divider" data-reveal><div class="div-line"></div><span class="div-dot">✦</span><div class="div-line"></div></div>
+
+<section class="credits" data-reveal>
+  <div class="credits-cat">Characters · 角色</div>
+  <div class="credit-item">
+    <span class="c-name">粘　年</span>
+    <span class="c-role">前小提琴家 · Former Violinist</span>
+    <span class="c-note">放下了琴弓，卻在某個雨夜，接住了另一個人。<br>全片共調陌陌眼鏡三次，導演表示這不在劇本裡。</span>
+  </div>
+  <div class="credit-item">
+    <span class="c-name">陌　陌</span>
+    <span class="c-role">作家 · Writer</span>
+    <span class="c-note">寫過千百個故事，沒想到最好看的那個，發生在她自己身上。<br>本片共戳粘年下巴兩次，比YA一次，趴上去一次。</span>
+  </div>
+
+  <div class="credits-cat" style="margin-top:3rem">Special Thanks · 特別致謝</div>
+  <div class="thanks-box">
+    <p>感謝粘年的左手</p>
+    <p>雖然已經不拉琴了</p>
+    <p class="g">但撐傘的姿勢依然優雅</p>
+    <p style="margin-top:1.2rem">感謝陌陌的眼鏡</p>
+    <p class="g">被調了三次還是沒有歪</p>
+    <p style="margin-top:1.2rem">感謝那場雨</p>
+    <p>你是本片編劇唯一可靠的助手</p>
+    <p style="margin-top:1.2rem">感謝粘年最後決定笑出來</p>
+    <p class="g">我們都知道你笑起來很好看</p>
+  </div>
+
+  <div class="credits-cat" style="margin-top:3rem">Production Notes · 幕後筆記</div>
+  <div class="funny">
+    <p>特別鳴謝——粘年的黑色高領毛衣，全片最努力的配角，從未喊停</p>
+    <p>感謝陌陌的透明傘，後來被她高舉當武器，用途多元</p>
+    <p>感謝路邊護欄，默默守護每一個雨中的曖昧場景</p>
+    <p>感謝所有紅燈 🚦 謝謝你們一直不變綠，讓他們多站了很久</p>
+    <p>感謝陌陌趴上粘年背那一幕，粘年表示他腰很痠但沒有說出來</p>
+    <p>自拍那幾張是他們自己拍的，導演完全不知情</p>
+  </div>
+
+  <div class="credits-cat" style="margin-top:3rem">Disclaimer · 聲明</div>
+  <div class="funny">
+    <p>本片不涉及任何乾燥天氣</p>
+    <p>所有淋濕造型均為真實呈現，非刻意為之（才怪）</p>
+    <p>沒有一把傘在拍攝過程中受傷</p>
+    <p>粘年的小提琴本人拒絕出鏡，已在家靜養</p>
+    <p>陌陌的下一部小說靈感來源：本片，不接受反駁</p>
+  </div>
+</section>
+
+<section class="finale" id="finale">
+  <p class="finale-quote">「 一個不再演奏的人<br>遇見了一個還在書寫的人<br><em style="color:var(--gold)">這就是雨夜存在的意義 」</em></p>
+  <p class="finale-attr">— 雨夜 · Rainy Night —</p>
+  <p class="end" style="margin-top:5rem">The End · 完</p>
+</section>
+
+<div class="lb" id="lb">
+  <button class="lb-x" id="lbX">✕ close</button>
+  <button class="lb-p" id="lbP">‹</button>
+  <img id="lbImg" src="" alt="">
+  <button class="lb-n" id="lbN">›</button>
+</div>
+
+<script>
+const cur=document.getElementById('cursor');
+document.addEventListener('mousemove',e=>{cur.style.left=e.clientX-4+'px';cur.style.top=e.clientY-4+'px';});
+
+const canvas=document.getElementById('rain-canvas');
+const ctx=canvas.getContext('2d');
+function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+resize();window.addEventListener('resize',resize);
+const drops=[];
+for(let i=0;i<130;i++) drops.push({x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,len:Math.random()*18+8,speed:Math.random()*4+2,op:Math.random()*0.35+0.08,a:Math.random()*0.15-0.05});
+function rain(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drops.forEach(d=>{
+    ctx.beginPath();ctx.moveTo(d.x,d.y);ctx.lineTo(d.x+d.a*d.len,d.y+d.len);
+    ctx.strokeStyle=`rgba(180,205,230,${d.op})`;ctx.lineWidth=0.5;ctx.stroke();
+    d.y+=d.speed;d.x+=d.a*0.3;
+    if(d.y>canvas.height){d.y=-d.len;d.x=Math.random()*canvas.width;}
+  });
+  requestAnimationFrame(rain);
+}
+rain();
+
+const pbar=document.getElementById('pbar');
+window.addEventListener('scroll',()=>{pbar.style.width=(window.scrollY/(document.body.scrollHeight-window.innerHeight)*100)+'%';});
+
+const revObs=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');}),{threshold:0.1});
+document.querySelectorAll('[data-reveal]').forEach(el=>revObs.observe(el));
+
+document.querySelectorAll('.film-strip').forEach(strip=>{
+  let isDown=false,startX=0,scrollLeft=0;
+  strip.addEventListener('mousedown',e=>{isDown=true;strip.classList.add('dragging');startX=e.pageX-strip.offsetLeft;scrollLeft=strip.scrollLeft;e.preventDefault();});
+  document.addEventListener('mouseup',()=>{isDown=false;strip.classList.remove('dragging');});
+  document.addEventListener('mousemove',e=>{if(!isDown)return;const x=e.pageX-strip.offsetLeft;strip.scrollLeft=scrollLeft-(x-startX)*1.5;});
+  strip.addEventListener('wheel',e=>{e.preventDefault();strip.scrollLeft+=e.deltaY*2;},{passive:false});
+});
+
+document.querySelectorAll('.strip-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const strip=document.getElementById('strip-'+btn.dataset.strip);
+    strip.scrollBy({left:btn.classList.contains('strip-next')?strip.clientWidth*0.75:-strip.clientWidth*0.75,behavior:'smooth'});
+  });
+});
+
+const catImgs={};
+document.querySelectorAll('.film-frame').forEach(frame=>{
+  const c=frame.dataset.cat,i=parseInt(frame.dataset.idx);
+  if(!catImgs[c])catImgs[c]=[];
+  catImgs[c][i]=frame.querySelector('img').src;
+});
+
+let lbCat='',lbIdx=0;
+const lb=document.getElementById('lb'),lbImg=document.getElementById('lbImg');
+function openLb(){lbImg.src=catImgs[lbCat][lbIdx];lb.classList.add('open');document.body.style.overflow='hidden';}
+function closeLb(){lb.classList.remove('open');document.body.style.overflow='';}
+document.querySelectorAll('.film-frame').forEach(frame=>{
+  frame.addEventListener('click',()=>{
+    if(frame.closest('.film-strip').classList.contains('dragging'))return;
+    lbCat=frame.dataset.cat;lbIdx=parseInt(frame.dataset.idx);openLb();
+  });
+});
+document.getElementById('lbX').addEventListener('click',closeLb);
+document.getElementById('lbP').addEventListener('click',()=>{lbIdx=(lbIdx-1+catImgs[lbCat].length)%catImgs[lbCat].length;openLb();});
+document.getElementById('lbN').addEventListener('click',()=>{lbIdx=(lbIdx+1)%catImgs[lbCat].length;openLb();});
+lb.addEventListener('click',e=>{if(e.target===lb)closeLb();});
+document.addEventListener('keydown',e=>{
+  if(!lb.classList.contains('open'))return;
+  if(e.key==='Escape')closeLb();
+  if(e.key==='ArrowLeft')document.getElementById('lbP').click();
+  if(e.key==='ArrowRight')document.getElementById('lbN').click();
+});
+</script>
+</body>
+</html>
